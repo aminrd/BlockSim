@@ -69,6 +69,11 @@ class Database:
         Base.metadata.create_all(self.engine)
         self.s = self.session()
 
+    def add_objects(self, objects):
+        self.s.add_all(objects)
+        self.s.commit()
+        return True
+
 
 if __name__ == '__main__':
     my_db = Database()
@@ -86,5 +91,4 @@ if __name__ == '__main__':
     my_db.s.add(t)
 
     my_db.s.commit()
-
     print('Database Initialized Successfully!')
