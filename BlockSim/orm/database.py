@@ -43,6 +43,7 @@ class Transaction(Base):
 
     id = Column(Integer, primary_key=True)
     amount = Column(Float)
+    time = Column(Integer, default=0)
 
     src = Column(Integer, ForeignKey('accounts.id'))
     dst = Column(Integer, ForeignKey('accounts.id'))
