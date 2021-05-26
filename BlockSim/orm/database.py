@@ -62,7 +62,7 @@ class Database:
     def __init__(self):
         self.engine = db.create_engine(settings.database_url,
                                        connect_args={'check_same_thread': False},
-                                       echo=True)
+                                       echo=False)
 
         self.session = sessionmaker()
         self.session.configure(bind=self.engine)

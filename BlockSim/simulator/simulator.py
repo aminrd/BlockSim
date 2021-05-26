@@ -62,13 +62,13 @@ class CointSimulator:
         if src.id == dst.id:
             return False
 
-        src_account = self.database.session.query(db.Account).get(src.id)
-        dst_account = self.database.session.query(db.Account).get(dst.id)
+        src_account = self.database.s.query(db.Account).get(src.id)
+        dst_account = self.database.s.query(db.Account).get(dst.id)
 
         amount = random.random() * src_account.balance
         src_account.balance = src_account.balance - amount
         dst_account.balance = dst_account.balance + amount
-        self.database.session.commit()
+        self.database.s.commit()
 
         # A local version is also stored in the class for higher performance
         self.accounts[src_index].balance -= amount
@@ -110,15 +110,16 @@ class CointSimulator:
 
         # Miner gift
         miner = random.choice(self.accounts)
-        miner_db = self.database.session.query(db.Account).get(miner.id)
-        miner_db.balance = miner_db + self.config.get('miner_gift', 6.25)
-        self.database.session.commit()
-
-        n_trx = self.config['transaction_function'](self.turn_number) * len(self.accounts)
+        miner_db = self.database.s.query(db.Account).get(miner.id)
+        miner_db.balance = miner_db.balance + self.config.get('miner_gift', 6.25)
+        self.database.s.commit()
 
         non_zero_accounts = [idx for idx, acc in enumerate(self.accounts) if acc.balance > 0]
-        src_index = random.choice(non_zero_accounts, k=int(n_trx))
-        dst_index = random.choice(list(range(len(self.accounts))), k=int(n_trx))
+        n_trx = self.config['transaction_function'](self.turn_number) * len(self.accounts)
+        n_trx = min(n_trx, len(non_zero_accounts))
+
+        src_index = random.choices(non_zero_accounts, k=int(n_trx))
+        dst_index = random.choices(list(range(len(self.accounts))), k=int(n_trx))
 
         for s, d in zip(src_index, dst_index):
             self.commit_transaction(s, d)
