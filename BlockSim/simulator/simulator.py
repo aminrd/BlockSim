@@ -39,25 +39,25 @@ class CointSimulator:
     def get_update(self):
         return len(self.accounts), len(self.transactions)
 
-    def commit_transaction(self, src, dst):
+    def commit_transaction(self, src_index, dst_index):
         """
         Commint a transaction from src to dst. The amount is chosen by a random number times balance of the
         source account deducting the src.balance and deposit it to dst.balance.
 
         Parameters
         ----------
-        src: BlockSim.orm.database.Account()
-            Source account
-        dst: BlockSim.orm.database.Account()
-            Destination account
+        src_index: BlockSim.orm.database.Account()
+            Source account index in list self.accounts
+        dst_index: BlockSim.orm.database.Account()
+            Destination account index in list self.accounts
 
         Returns
         -------
         status: bool
             True if transaction was successful, False otherwise
         """
-        if src.balance <= 0:
-            return False
+        src = self.accounts[src_index]
+        dst = self.accounts[src_index]
 
         if src.id == dst.id:
             return False
@@ -69,6 +69,10 @@ class CointSimulator:
         src_account.balance = src_account.balance - amount
         dst_account.balance = dst_account.balance + amount
         self.database.session.commit()
+
+        # A local version is also stored in the class for higher performance
+        self.accounts[src_index].balance -= amount
+        self.accounts[dst_index].balance += amount
 
         trx = db.Transaction(amount=amount, source=src_account,
                              destination=dst_account, time=self.turn_number)
@@ -89,7 +93,6 @@ class CointSimulator:
         -------
         update: tuple
             A tuple specifies (number of current users, number of current accounts)
-
         """
         self.turn_number += 1
 
@@ -113,9 +116,11 @@ class CointSimulator:
 
         n_trx = self.config['transaction_function'](self.turn_number) * len(self.accounts)
 
-        sources = random.choice(self.accounts, k=int(n_trx))
-        destinations = random.choice(self.accounts, k=int(n_trx))
-        for s, d in zip(sources, destinations):
+        non_zero_accounts = [idx for idx, acc in enumerate(self.accounts) if acc.balance > 0]
+        src_index = random.choice(non_zero_accounts, k=int(n_trx))
+        dst_index = random.choice(list(range(len(self.accounts))), k=int(n_trx))
+
+        for s, d in zip(src_index, dst_index):
             self.commit_transaction(s, d)
 
         return self.get_update()
