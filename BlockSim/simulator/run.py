@@ -1,13 +1,18 @@
 from BlockSim.simulator.simulator import CointSimulator
 from BlockSim.orm.database import Database, User
 from tqdm import tqdm
+from BlockSim.settings import root_dir
+import os
 
 
 def new_user_at_turn(t):
     return 10 + t
 
 
-def run(max_turn=1000):
+def setup(max_turn=1000):
+    if os.path.exists(os.path.join(root_dir, 'database.db')):
+        os.remove(os.path.join(root_dir, 'database.db'))
+
     db = Database()
 
     all_users = []
@@ -24,5 +29,5 @@ def run(max_turn=1000):
 
 
 if __name__ == '__main__':
-    run(5)
+    setup(5)
     print('Done!')

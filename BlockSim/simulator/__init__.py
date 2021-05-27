@@ -1,2 +1,2 @@
 from .simulator import *
-from .run import *
+from .run import setup

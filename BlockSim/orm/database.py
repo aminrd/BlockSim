@@ -75,6 +75,10 @@ class Database:
         self.s.commit()
         return True
 
+    def __del__(self):
+        self.s.close()
+        self.session.close_all()
+
 
 if __name__ == '__main__':
     my_db = Database()

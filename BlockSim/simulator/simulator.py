@@ -57,7 +57,7 @@ class CointSimulator:
             True if transaction was successful, False otherwise
         """
         src = self.accounts[src_index]
-        dst = self.accounts[src_index]
+        dst = self.accounts[dst_index]
 
         if src.id == dst.id:
             return False
@@ -65,6 +65,7 @@ class CointSimulator:
         src_account = self.database.s.query(db.Account).get(src.id)
         dst_account = self.database.s.query(db.Account).get(dst.id)
 
+        # FIXME: Negative amount in transaction observed!
         amount = random.random() * src_account.balance
         src_account.balance = src_account.balance - amount
         dst_account.balance = dst_account.balance + amount
