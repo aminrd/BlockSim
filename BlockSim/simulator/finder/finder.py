@@ -57,7 +57,6 @@ class Finder:
             sorted_balances[c] = sorted((balance, a_id) for a_id, balance in self.balances[c])
 
 
-
 if __name__ == '__main__':
     from pprint import pprint
     finder = Finder(5)

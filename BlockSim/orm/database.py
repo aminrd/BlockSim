@@ -45,7 +45,7 @@ class Transaction(Base):
     amount = Column(Float)
     time = Column(Integer, default=0)
 
-    src = Column(Integer, ForeignKey('accounts.id'))
+    src = Column(Integer, ForeignKey('accounts.id'), nullable=True)
     dst = Column(Integer, ForeignKey('accounts.id'))
 
     source = relationship("Account", foreign_keys=[src])

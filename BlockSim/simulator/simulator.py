@@ -53,28 +53,29 @@ class CointSimulator:
 
         Returns
         -------
-        status: bool
-            True if transaction was successful, False otherwise
+        trx: BlockSim.orm.database.Trasnaction()
+            If everything goes well, returns the transaction. None otherwise.
         """
         src = self.accounts[src_index]
         dst = self.accounts[dst_index]
 
         if src.id == dst.id:
-            return False
+            return None
 
-        src_account = self.database.s.query(db.Account).get(src.id)
-        dst_account = self.database.s.query(db.Account).get(dst.id)
+        src_account = src
+        dst_account = dst
 
         amount = round(random.random() * src_account.balance, 8)
-        src_account.balance = round(src_account.balance - amount, 8)
-        dst_account.balance = round(dst_account.balance + amount, 8)
-        self.database.s.commit()
 
-        trx = db.Transaction(amount=amount, source=src_account,
-                             destination=dst_account, time=self.turn_number)
-        self.database.add_objects([trx])
-        self.transactions.append(trx)
-        return True
+        if amount > 0:
+            src_account.balance = round(src_account.balance - amount, 8)
+            dst_account.balance = round(dst_account.balance + amount, 8)
+
+            trx = db.Transaction(amount=amount, source=src_account,
+                                 destination=dst_account, time=self.turn_number)
+            return trx
+
+        return None
 
     def turn(self, user_list=None, verbose=False):
         """
@@ -101,7 +102,7 @@ class CointSimulator:
 
         n_account = int(self.config['new_accounts'](self.turn_number))
         new_accounts = [db.Account(owner=random.choice(user_list),
-                        crypto_type=self.config.get('crypto_name', 'Bitcoin'))
+                                   crypto_type=self.config.get('crypto_name', 'Bitcoin'))
                         for _ in range(n_account)]
 
         self.database.add_objects(new_accounts)
@@ -110,8 +111,15 @@ class CointSimulator:
         # Miner gift
         miner = random.choice(self.accounts)
         miner_db = self.database.s.query(db.Account).get(miner.id)
-        miner_db.balance = miner_db.balance + self.config.get('miner_gift')(self.turn_number)
+
+        miner_gift = self.config.get('miner_gift')(self.turn_number)
+        miner_db.balance = miner_db.balance + miner_gift
         self.database.s.commit()
+
+        miner_trx = db.Transaction(amount=miner_gift, source=None,
+                                   destination=miner_db, time=self.turn_number)
+
+        self.database.add_objects([miner_trx])
 
         n_trx = self.config['transaction_function'](self.turn_number)
 
@@ -119,10 +127,18 @@ class CointSimulator:
         src_index = random.choices(non_zero_accounts, k=int(n_trx))
         dst_index = random.choices(list(range(len(self.accounts))), k=int(n_trx))
 
+        new_transactions = []
         for i, (s, d) in enumerate(zip(src_index, dst_index)):
             if verbose:
                 print(f'({self.config["crypto_name"]}) TRX: from {s} --> {d} [{i} out of {n_trx}]')
 
-            self.commit_transaction(s, d)
+            new_trx = self.commit_transaction(s, d)
+            if new_trx is not None:
+                new_transactions.append(new_trx)
+
+        self.database.add_objects(new_transactions)
+        self.database.s.commit()
+
+        self.transactions += new_transactions
 
         return self.get_update()
