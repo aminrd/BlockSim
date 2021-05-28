@@ -1,0 +1,17 @@
+{
+  "Bitcoin": {
+    "new_accounts": [25, 0.1],
+    "transaction_function": [30, 1],
+    "miner_gift": [6.25]
+  },
+  "Ethereum": {
+    "new_accounts": [25, 0.1],
+    "transaction_function": [30, 1],
+    "miner_gift": [6.25]
+  },
+  "Doge": {
+    "new_accounts": [25, 0.1],
+    "transaction_function": [30, 1],
+    "miner_gift": [6.25]
+  }
+}
