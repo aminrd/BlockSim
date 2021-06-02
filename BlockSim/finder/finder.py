@@ -1,4 +1,5 @@
 from BlockSim.orm.database import Account, Database, Transaction
+from BlockSim.finder.classes import FinderAccount
 from collections import defaultdict, OrderedDict
 from tqdm import tqdm
 import statistics
@@ -10,30 +11,36 @@ def binary_find(balance, all_balances):
 
     Parameters
     ----------
-    balance: float
+    balance: BlockSim.finder.classes.FinderAccount()
         Target balance
 
     all_balances: list
-        List of tuples balances and ids (balance_i, id_i)
+        List of balances of type BlockSim.finder.classes.FinderAccount()
 
     Returns
     -------
     l: list
         List of accounts of tuples (balance_c, id_c)
     """
+    if not isinstance(balance, FinderAccount):
+        return TypeError("balance should be an instance of BlockSim.finder.classes.FinderAccount()")
+
+    if not isinstance(all_balances, list) or not all(isinstance(x, FinderAccount) for x in all_balances):
+        return TypeError("all_balances is a list of balances of type BlockSim.finder.classes.FinderAccount()")
+
     left_idx, right_idx = 0, len(all_balances) - 1
 
-    if all_balances[0][0] > balance or all_balances[-1][0] < balance:
+    if all_balances > balance or all_balances[-1] < balance:
         return []
 
     while right_idx > left_idx:
         index = (right_idx + left_idx) // 2
-        sub = all_balances[index][0]
+        sub = all_balances[index]
 
         # Found on left
-        if all_balances[left_idx][0] == balance:
+        if all_balances[left_idx] == balance:
             i, ind = left_idx, []
-            while i <= right_idx and all_balances[i][0] == balance:
+            while i <= right_idx and all_balances[i] == balance:
                 ind.append(i)
                 i += 1
             return [all_balances[i] for i in ind]
@@ -42,11 +49,11 @@ def binary_find(balance, all_balances):
         elif sub == balance:
             i, j, ind = index, index + 1, []
 
-            while i >= left_idx and all_balances[i][0] == balance:
+            while i >= left_idx and all_balances[i] == balance:
                 ind.append(i)
                 i -= 1
 
-            while j <= right_idx and all_balances[j][0] == balance:
+            while j <= right_idx and all_balances[j] == balance:
                 ind.append(j)
                 j += 1
 
@@ -55,7 +62,7 @@ def binary_find(balance, all_balances):
         # Found on right
         elif all_balances[right_idx] == balance:
             i, ind = right_idx, []
-            while i >= left_idx and all_balances[i][0] == balance:
+            while i >= left_idx and all_balances[i] == balance:
                 ind.append(i)
                 i -= 1
             return [all_balances[i] for i in ind]
@@ -73,13 +80,13 @@ def binary_find(balance, all_balances):
 
     indices = sorted([right_idx, left_idx])
     i, j = indices[0] - 1, indices[1] + 1
-    v1, v2 = all_balances[indices[0] - 1][0], all_balances[indices[1] + 1][0]
+    v1, v2 = all_balances[indices[0] - 1], all_balances[indices[1] + 1]
 
-    while i >= 0 and all_balances[i][0] == v1:
+    while i >= 0 and all_balances[i] == v1:
         indices.append(i)
         i -= 1
 
-    while j < len(all_balances) and all_balances[j][0] == v2:
+    while j < len(all_balances) and all_balances[j] == v2:
         indices.append(j)
         j += 1
 
@@ -154,14 +161,11 @@ class Finder:
         # Metric = (accuracy, variance)
         best_metric = (0, 1000)
         keys = list(sorted_balances.keys())
-        for acc in sorted_balances[keys[0]]:
+        for acc in tqdm(sorted_balances[keys[0]], desc='Running reverse finder method'):
             answer = {keys[0]: [acc, 1]}
 
             for k_index in range(1, len(keys)):
                 k_prev, k_current = keys[k_index - 1], keys[k_index]
-                
-
-
 
         pass
 
@@ -174,9 +178,12 @@ if __name__ == '__main__':
     finder = Finder(5)
     pprint(finder.balances)
 
-    balances = [(random.randrange(0, 10000), i) for i in range(1000)]
+    balances = [random.randrange(0, 10000) for _ in range(1000)]
+    balances = [FinderAccount(b, i) for i, b in enumerate(balances)]
     balances = sorted(balances)
-    result = binary_find(10, balances)
+
+    target_acc = FinderAccount(100, -1)
+    result = binary_find(target_acc, balances)
     pprint(result)
 
     steak = {'Bitcoin': 0.1, 'Ethereum': 0.5, 'Doge': 0.4}
