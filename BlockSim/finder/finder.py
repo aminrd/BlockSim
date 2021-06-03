@@ -3,6 +3,7 @@ from BlockSim.finder.classes import FinderAccount
 from collections import defaultdict, OrderedDict
 from tqdm import tqdm
 import statistics
+import copy
 
 
 def binary_find(balance, all_balances):
@@ -94,7 +95,7 @@ def binary_find(balance, all_balances):
 
 
 def confidence_level(target, value):
-    return 1 - abs(value - target) / target
+    return max(0.0, 1 - abs(value - target) / target)
 
 
 class Finder:
@@ -147,6 +148,9 @@ class Finder:
         if sum(v for v in ratios.values()) != 1:
             raise ValueError("Sum of the steak values in ratios should be equal to 1.0!")
 
+        if any(v <= 0 or v >= 1 for v in ratios.values()):
+            raise ValueError("Ratios should be greater than 0 and less than 1")
+
         if len(ratios.keys()) < 2:
             raise ValueError(f"Steak balances should have at least two steaks but given {len(ratios.keys())}")
 
@@ -156,16 +160,43 @@ class Finder:
         # Sort accounts within each crypto-currency by balance
         sorted_balances = OrderedDict()
         for _, c in coin_order:
-            sorted_balances[c] = sorted((balance, a_id) for a_id, balance in self.balances[c].items())
+            sorted_balances[c] = sorted(FinderAccount(balance, a_id) for a_id, balance in self.balances[c].items())
 
         # Metric = (accuracy, variance)
         best_metric = (0, 1000)
         keys = list(sorted_balances.keys())
         for acc in tqdm(sorted_balances[keys[0]], desc='Running reverse finder method'):
-            answer = {keys[0]: [acc, 1]}
+            a_test = copy.deepcopy(acc)
+            a_test.cl = 1.0
+            answer = {keys[0]: [a_test]}
 
             for k_index in range(1, len(keys)):
                 k_prev, k_current = keys[k_index - 1], keys[k_index]
+
+                upcoming_answers = defaultdict(bool)
+                for acc_prev in answer[k_prev]:
+                    target_balance = acc_prev.balance * ratios[k_current] / ratios[k_prev]
+                    target_acc = FinderAccount(target_balance, -1)
+                    acc_list = copy.deepcopy(binary_find(target_acc, sorted_balances[k_current]))
+
+                    for acc_found in acc_list:
+                        acc_found.cl = acc_prev.cl * confidence_level(target_acc.balance, acc_found.balance)
+
+                    acc_list = list(filter(lambda x: x.cl > 0.0, acc_list))
+                    for recent_account in acc_list:
+                        if upcoming_answers[recent_account.identifier]:
+                            upcoming_answers[recent_account.identifier].cl += recent_account.cl
+                        else:
+                            upcoming_answers[recent_account.identifier] = recent_account
+
+                answer[k_current] = [v for v in upcoming_answers.values()]
+            print('\n')
+            pprint(answer)
+
+
+
+
+
 
         pass
 
