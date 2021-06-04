@@ -1,8 +1,8 @@
-from BlockSim.orm.database import Account, Database, Transaction
-from BlockSim.finder.classes import FinderAccount
+from BlockSim.orm.database import Account, Database, Transaction, User
+from BlockSim.finder.classes import FinderAccount, FinderAnswer
 from collections import defaultdict, OrderedDict
 from tqdm import tqdm
-import statistics
+import itertools
 import copy
 
 
@@ -99,7 +99,7 @@ def confidence_level(target, value):
 
 
 class Finder:
-    def __init__(self, turn_number, coins='all'):
+    def __init__(self, turn_number, coins='all', synthetic=True):
         db = Database()
         available_coins = set(acc.crypto_type for acc in db.s.query(Account).all())
 
@@ -117,14 +117,24 @@ class Finder:
 
             for trx in transactions:
                 c_type = trx.destination.crypto_type
-                balances[c_type][trx.dst] += trx.amount
+                if c_type in self.coins:
+                    balances[c_type][trx.dst] += trx.amount
 
-                if trx.src is not None:
-                    balances[c_type][trx.src] += trx.amount
+                    if trx.src is not None:
+                        balances[c_type][trx.src] += trx.amount
 
         self.balances = dict()
         for crypto_name, arr in balances.items():
             self.balances[crypto_name] = {k: v for k, v in arr.items() if v > 0}
+
+        if synthetic:
+            users = defaultdict(set)
+
+            for acc in itertools.chain(*map(lambda x: x.keys(), self.balances.values())):
+                acc_db = db.s.query(Account).get(acc)
+                users[acc_db.owner].add(acc)
+
+            self.users = users
 
     def find(self, ratios):
         """
@@ -165,6 +175,8 @@ class Finder:
         # Metric = (accuracy, variance)
         best_metric = (0, 1000)
         keys = list(sorted_balances.keys())
+        answers = []
+
         for acc in tqdm(sorted_balances[keys[0]], desc='Running reverse finder method'):
             a_test = copy.deepcopy(acc)
             a_test.cl = 1.0
@@ -188,17 +200,14 @@ class Finder:
                             upcoming_answers[recent_account.identifier].cl += recent_account.cl
                         else:
                             upcoming_answers[recent_account.identifier] = recent_account
+                        upcoming_answers[recent_account.identifier].voters += 1
 
                 answer[k_current] = [v for v in upcoming_answers.values()]
-            print('\n')
-            pprint(answer)
 
+            answers.append(FinderAnswer(answer))
 
-
-
-
-
-        pass
+        answers = sorted(answers, reverse=True)
+        return answers[0]
 
 
 if __name__ == '__main__':
@@ -208,6 +217,7 @@ if __name__ == '__main__':
 
     finder = Finder(5)
     pprint(finder.balances)
+    pprint(finder.users)
 
     balances = [random.randrange(0, 10000) for _ in range(1000)]
     balances = [FinderAccount(b, i) for i, b in enumerate(balances)]
