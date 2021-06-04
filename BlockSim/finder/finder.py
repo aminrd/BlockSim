@@ -130,9 +130,9 @@ class Finder:
         if synthetic:
             users = defaultdict(set)
 
-            for acc in itertools.chain(*map(lambda x: x.keys(), self.balances.values())):
-                acc_db = db.s.query(Account).get(acc)
-                users[acc_db.owner].add(acc)
+            for acc_id, acc_balance in itertools.chain(*map(lambda x: x.items(), self.balances.values())):
+                acc_db = db.s.query(Account).get(acc_id)
+                users[acc_db.owner.id].add((acc_db.crypto_type, acc_balance, acc_id))
 
             self.users = users
 
@@ -227,8 +227,14 @@ if __name__ == '__main__':
     result = binary_find(target_acc, balances)
     pprint(result)
 
-    steak = {'Bitcoin': 0.1, 'Ethereum': 0.5, 'Doge': 0.4}
+    test_case = finder.users[4]
+    all_money = sum(b for _, b, _ in test_case)
+    steak = {cname: balance / all_money for cname, balance, _ in test_case}
+
+    print(f'Query : find user {test_case} with steak holding: ')
+    print(steak)
+    print('=' * 30)
     f_result = finder.find(steak)
-    pprint(f_result)
+    pprint(f_result.d)
 
     print('Done!')

@@ -37,6 +37,13 @@ class User(Base):
     def __str__(self):
         return self.__repr__()
 
+    def acc_count(self, crypto_type='all'):
+        if crypto_type == 'all':
+            return len(self.accounts)
+        else:
+            accs = list(filter(lambda a: a.crypto_type == crypto_type, self.accounts))
+            return len(accs)
+
 
 class Transaction(Base):
     __tablename__ = 'transactions'

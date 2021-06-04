@@ -105,8 +105,10 @@ class CointSimulator:
             return update
 
         n_account = int(self.config['new_accounts'](self.turn_number))
-        # TODO: new accounts assigns to users who doesn't have any account yet
-        new_accounts = [db.Account(owner=random.choice(user_list),
+
+        cname = self.config.get('crypto_name', 'all')
+        u_list = list(filter(lambda u: u.acc_count(cname) < 1, user_list))
+        new_accounts = [db.Account(owner=random.choice(u_list),
                                    crypto_type=self.config.get('crypto_name', 'Bitcoin'))
                         for _ in range(n_account)]
 

@@ -31,7 +31,7 @@ def load_configs():
 
 
 def new_user_at_turn(t):
-    return 10 + t
+    return 100 + t
 
 
 def setup(max_turn=1000, n_coins=3, verbose=False):
