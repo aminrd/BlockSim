@@ -65,7 +65,11 @@ class CointSimulator:
         src_account = src
         dst_account = dst
 
-        amount = round(random.random() * src_account.balance, 8)
+        # In some random cases, flushes the account to have empty balance
+        if random.random() < 0.05:
+            amount = src_account.balance
+        else:
+            amount = round(random.random() * src_account.balance, 8)
 
         if amount > 0:
             src_account.balance = round(src_account.balance - amount, 8)
@@ -101,6 +105,7 @@ class CointSimulator:
             return update
 
         n_account = int(self.config['new_accounts'](self.turn_number))
+        # TODO: new accounts assigns to users who doesn't have any account yet
         new_accounts = [db.Account(owner=random.choice(user_list),
                                    crypto_type=self.config.get('crypto_name', 'Bitcoin'))
                         for _ in range(n_account)]
