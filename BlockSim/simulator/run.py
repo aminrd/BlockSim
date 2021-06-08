@@ -64,7 +64,7 @@ def setup(max_turn=1000, n_coins=3, verbose=False):
             new_objects = simulator.turn(user_list=all_users, verbose=verbose)
             flushable_objects += new_objects
 
-        if len(flushable_objects) > 2048:
+        if len(flushable_objects) > 4096:
             db.add_objects(flushable_objects)
             flushable_objects = []
 
@@ -72,5 +72,5 @@ def setup(max_turn=1000, n_coins=3, verbose=False):
 
 
 if __name__ == '__main__':
-    setup(max_turn=1000, n_coins=3, verbose=False)
+    setup(max_turn=10000, n_coins=5, verbose=False)
     print('Done!')

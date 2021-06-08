@@ -1,17 +1,27 @@
 {
   "Bitcoin": {
-    "new_accounts": [25, 0.1],
-    "transaction_function": [30, 1],
-    "miner_gift": [6.25]
+    "new_accounts": [250, 30],
+    "transaction_function": [30, 15],
+    "miner_gift": [12, 0.01]
   },
   "Ethereum": {
-    "new_accounts": [25, 0.1],
-    "transaction_function": [30, 1],
+    "new_accounts": [100, 15],
+    "transaction_function": [60, 5],
     "miner_gift": [6.25]
   },
   "Doge": {
-    "new_accounts": [25, 0.1],
-    "transaction_function": [30, 1],
-    "miner_gift": [6.25]
+    "new_accounts": [25, 5],
+    "transaction_function": [10, 3],
+    "miner_gift": [3, 0.001]
+  },
+  "BTC": {
+    "new_accounts": [25, 2],
+    "transaction_function": [22, 1],
+    "miner_gift": [2]
+  },
+  "XRP": {
+    "new_accounts": [25, 1],
+    "transaction_function": [5, 1],
+    "miner_gift": [1.5]
   }
 }
