@@ -95,8 +95,8 @@ class CointSimulator:
 
         Returns
         -------
-        update: tuple
-            A tuple specifies (number of current users, number of current accounts)
+        new_db_objects: list
+            A list of new objects that should be added to the database
         """
         self.turn_number += 1
 
@@ -108,25 +108,20 @@ class CointSimulator:
 
         cname = self.config.get('crypto_name', 'all')
         u_list = list(filter(lambda u: u.acc_count(cname) < 1, user_list))
-        new_accounts = [db.Account(owner=random.choice(u_list),
+        new_accounts = [db.Account(owner=random.choice(u_list), balance=0.0,
                                    crypto_type=self.config.get('crypto_name', 'Bitcoin'))
                         for _ in range(n_account)]
 
-        self.database.add_objects(new_accounts)
         self.accounts += new_accounts
 
         # Miner gift
-        miner = random.choice(self.accounts)
-        miner_db = self.database.s.query(db.Account).get(miner.id)
+        miner_db = random.choice(self.accounts)
 
         miner_gift = self.config.get('miner_gift')(self.turn_number)
         miner_db.balance = miner_db.balance + miner_gift
-        self.database.s.commit()
 
         miner_trx = db.Transaction(amount=miner_gift, source=None,
                                    destination=miner_db, time=self.turn_number)
-
-        self.database.add_objects([miner_trx])
 
         n_trx = self.config['transaction_function'](self.turn_number)
 
@@ -143,9 +138,7 @@ class CointSimulator:
             if new_trx is not None:
                 new_transactions.append(new_trx)
 
-        self.database.add_objects(new_transactions)
-        self.database.s.commit()
-
         self.transactions += new_transactions
 
-        return self.get_update()
+        new_db_objects = new_accounts + new_transactions + [miner_trx]
+        return new_db_objects

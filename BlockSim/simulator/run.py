@@ -51,20 +51,26 @@ def setup(max_turn=1000, n_coins=3, verbose=False):
     all_users = []
     simulators = [CointSimulator(conf=cfg, database=db) for cfg in configs]
 
+    flushable_objects = []
     for t in tqdm(range(max_turn), desc="Simulating "):
         new_users = [User() for _ in range(new_user_at_turn(t))]
         all_users += new_users
-        db.add_objects(new_users)
+        flushable_objects += new_users
 
         for simulator in simulators:
             if verbose:
                 print(f'>{simulator.config["crypto_name"]}')
 
-            simulator.turn(user_list=all_users, verbose=verbose)
+            new_objects = simulator.turn(user_list=all_users, verbose=verbose)
+            flushable_objects += new_objects
+
+        if len(flushable_objects) > 2048:
+            db.add_objects(flushable_objects)
+            flushable_objects = []
 
     db.s.close()
 
 
 if __name__ == '__main__':
-    setup(max_turn=5, n_coins=3, verbose=True)
+    setup(max_turn=1000, n_coins=3, verbose=False)
     print('Done!')
