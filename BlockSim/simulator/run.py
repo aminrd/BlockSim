@@ -30,8 +30,8 @@ def load_configs():
     return configs
 
 
-def new_user_at_turn(t):
-    return 100 + t
+def new_user_at_turn(t, simulators):
+    return sum(int(s.config['new_accounts'](t)) for s in simulators)
 
 
 def setup(max_turn=1000, n_coins=3, verbose=False):
@@ -53,9 +53,9 @@ def setup(max_turn=1000, n_coins=3, verbose=False):
 
     flushable_objects = []
     for t in tqdm(range(max_turn), desc="Simulating "):
-        new_users = [User() for _ in range(new_user_at_turn(t))]
+        new_users = [User() for _ in range(new_user_at_turn(t, simulators))]
         all_users += new_users
-        flushable_objects += new_users
+        db.add_objects(new_users)
 
         for simulator in simulators:
             if verbose:
@@ -64,9 +64,21 @@ def setup(max_turn=1000, n_coins=3, verbose=False):
             new_objects = simulator.turn(user_list=all_users, verbose=verbose)
             flushable_objects += new_objects
 
-        if len(flushable_objects) > 4096:
+        if len(flushable_objects) > 2 ** 20:
+            if verbose:
+                print(f' > flushing {len(flushable_objects)} objects')
+                
             db.add_objects(flushable_objects)
             flushable_objects = []
+
+        if verbose:
+            print('=' * 60)
+            print(f'Iteration # {t}')
+            print(f'Number of Users : {len(all_users)}')
+
+            for s in simulators:
+                print(f'{s.config["crypto_name"]}: #acccounts: {len(s.accounts)}, #trx: {len(s.transactions)}')
+            print('=' * 60)
 
     db.s.close()
 

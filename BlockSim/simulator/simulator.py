@@ -4,7 +4,6 @@ from BlockSim.orm import database as db
 base_config = {
     'crypto_name': 'Bitcoin',
     'new_accounts': lambda t: 25 + t // 10,
-    'transaction_function': lambda t: 3000,
     'miner_gift': lambda t: 6.25
 }
 
@@ -123,9 +122,9 @@ class CointSimulator:
         miner_trx = db.Transaction(amount=miner_gift, source=None,
                                    destination=miner_db, time=self.turn_number)
 
-        n_trx = self.config['transaction_function'](self.turn_number)
-
         non_zero_accounts = [idx for idx, acc in enumerate(self.accounts) if acc.balance > 0]
+        n_trx = random.randint(0, len(self.accounts))
+
         src_index = random.choices(non_zero_accounts, k=int(n_trx))
         dst_index = random.choices(list(range(len(self.accounts))), k=int(n_trx))
 
