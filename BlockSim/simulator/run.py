@@ -3,6 +3,7 @@ from BlockSim.orm.database import Database, User
 from BlockSim.settings import root_dir
 import BlockSim.config_files as cf
 from tqdm import tqdm
+import datetime
 import json
 import os
 
@@ -64,12 +65,13 @@ def setup(max_turn=1000, n_coins=3, verbose=False):
             new_objects = simulator.turn(user_list=all_users, verbose=verbose)
             flushable_objects += new_objects
 
-        if len(flushable_objects) > 2 ** 20:
-            if verbose:
-                print(f' > flushing {len(flushable_objects)} objects')
-                
+        if t % 10 == 0:
+            now = datetime.datetime.now().isoformat(' ')
+            print(f' > flushing {len(flushable_objects)} objects at [{now}]')
             db.add_objects(flushable_objects)
             flushable_objects = []
+            now = datetime.datetime.now().isoformat(' ')
+            print(f' > Done at [{now}]')
 
         if verbose:
             print('=' * 60)
@@ -77,12 +79,12 @@ def setup(max_turn=1000, n_coins=3, verbose=False):
             print(f'Number of Users : {len(all_users)}')
 
             for s in simulators:
-                print(f'{s.config["crypto_name"]}: #acccounts: {len(s.accounts)}, #trx: {len(s.transactions)}')
+                print(f'{s.config["crypto_name"]}: #acccounts: {len(s.accounts)}')
             print('=' * 60)
 
     db.s.close()
 
 
 if __name__ == '__main__':
-    setup(max_turn=10000, n_coins=5, verbose=False)
+    setup(max_turn=1000, n_coins=5, verbose=False)
     print('Done!')

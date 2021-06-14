@@ -33,10 +33,9 @@ class CointSimulator:
         self.config = conf
         self.database = database
         self.accounts = []
-        self.transactions = []
 
     def get_update(self):
-        return len(self.accounts), len(self.transactions)
+        return len(self.accounts)
 
     def commit_transaction(self, src_index, dst_index):
         """
@@ -137,7 +136,6 @@ class CointSimulator:
             if new_trx is not None:
                 new_transactions.append(new_trx)
 
-        self.transactions += new_transactions
 
         new_db_objects = new_accounts + new_transactions + [miner_trx]
         return new_db_objects
