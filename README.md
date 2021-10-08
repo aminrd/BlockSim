@@ -1,6 +1,24 @@
 # BlockSim
 A tool for blockchain simulation and studies
 
+## How to Install & Run
+In order to install BlockSim, you first need to create a python virtual environment and then run: 
 
-## Sources:
-Coin informations for setting up `BlockSim.config_files.coins.json`:  https://bitinfocharts.com/comparison/size-btc-eth-xrp.html
+```
+python -m pip install -r requirements.txt
+python setup.py install
+```
+
+In order to run the example setup, go to `simulator` directory and run: 
+```
+cd simulator; python run.py
+```
+This will run the `simulator` and creates `database.db`. After that, you can go to the `finder` directory and run: 
+```
+cd finder; python finder.py
+```
+
+## Source:
+
+## Author:
+Amin Aghaee

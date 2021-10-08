@@ -1,7 +1,8 @@
 from BlockSim.orm.database import Account, Database, Transaction, User
-from BlockSim.finder.classes import FinderAccount, FinderAnswer
+from BlockSim.finder.classes import FinderAccount, FinderAnswer, FinderAnswerPaper
 from collections import defaultdict, OrderedDict
 from tqdm import tqdm
+import warnings
 import itertools
 import copy
 
@@ -98,6 +99,20 @@ def confidence_level(target, value):
     return max(0.0, 1 - abs(value - target) / target)
 
 
+def check_finder_condition(ratios):
+    if not isinstance(ratios, dict):
+        return TypeError("ratios should be a dictionary mapping crypto names to steak percentage!")
+
+    sum_values = sum(v for v in ratios.values())
+    if abs(sum_values - 1.0) > 0.02:
+        warnings.warn("Sum of the steak values in ratios should be equal to 1.0!")
+
+    if any(v < 0 or v > 1 for v in ratios.values()):
+        raise ValueError("Ratios should be greater than 0 and less than 1")
+
+    if len(ratios.keys()) < 2:
+        raise ValueError(f"Steak balances should have at least two steaks but given {len(ratios.keys())}")
+
 class Finder:
     def __init__(self, turn_number, coins='all', synthetic=True):
         db = Database()
@@ -152,20 +167,9 @@ class Finder:
             A dictionary mapping crypto_type to account id
 
         """
-        if not isinstance(ratios, dict):
-            return TypeError("ratios should be a dictionary mapping crypto names to steak percentage!")
-
-        if sum(v for v in ratios.values()) != 1:
-            raise ValueError("Sum of the steak values in ratios should be equal to 1.0!")
-
-        if any(v <= 0 or v >= 1 for v in ratios.values()):
-            raise ValueError("Ratios should be greater than 0 and less than 1")
-
-        if len(ratios.keys()) < 2:
-            raise ValueError(f"Steak balances should have at least two steaks but given {len(ratios.keys())}")
-
+        check_finder_condition(ratios)
         # Sort coins from smallest number of accounts to largest
-        coin_order = sorted((len(self.balances[c]), c) for c in self.coins)
+        coin_order = sorted((len(self.balances[c]), c) for c in ratios.keys())
 
         # Sort accounts within each crypto-currency by balance
         sorted_balances = OrderedDict()
@@ -209,13 +213,62 @@ class Finder:
         answers = sorted(answers, reverse=True)
         return answers[0]
 
+    def find_paper(self, ratios, st=-1):
+        """
+        Run the finder algorithm to find the account with highest probability given steak
+        percentages for each crypto coin type.
+        Source: Arxive paper
+
+        Parameters
+        ----------
+        ratios: dict
+            ratios should be a dictionary mapping crypto names to steak percentage!
+
+        st: float
+            Score threshold
+
+        Returns
+        -------
+        result: dict
+            A dictionary mapping crypto_type to account id
+        """
+        if len(steak.keys()) < 2:
+            return None
+
+        check_finder_condition(ratios)
+        coin_order = sorted((len(self.balances[c]), c) for c in ratios.keys())
+
+        # Sort accounts within each crypto-currency by balance
+        sorted_balances = OrderedDict()
+        for _, c in coin_order:
+            sorted_balances[c] = sorted(FinderAccount(balance, a_id) for a_id, balance in self.balances[c].items())
+
+        best_score = -1
+        best_answer = None
+        keys = list(sorted_balances.keys())
+        for acc in tqdm(sorted_balances[keys[0]], desc='Running reverse finder method'):
+            answers = [[acc]]
+
+            for i in range(2, len(keys)):
+                target_balance = acc.balance * ratios[keys[i]] / ratios[keys[0]]
+                target_acc = FinderAccount(target_balance, -1)
+                acc_list = binary_find(target_acc, sorted_balances[keys[i]])
+                answers.append(acc_list)
+
+            for ans in itertools.product(*answers):
+                new_ans = FinderAnswerPaper({k: a for k,a in zip(keys, ans)}, ratios)
+                if new_ans.get_score() > best_score:
+                    best_answer = new_ans
+
+        return best_answer
+
 
 if __name__ == '__main__':
     print('Testing BlockSim.finder module')
     from pprint import pprint
     import random
 
-    finder = Finder(5)
+    finder = Finder(20)
     pprint(finder.balances)
     pprint(finder.users)
 
@@ -227,14 +280,31 @@ if __name__ == '__main__':
     result = binary_find(target_acc, balances)
     pprint(result)
 
-    test_case = finder.users[4]
-    all_money = sum(b for _, b, _ in test_case)
-    steak = {cname: balance / all_money for cname, balance, _ in test_case}
+    tot_cnt, hit_cnt = defaultdict(int), defaultdict(int)
 
-    print(f'Query : find user {test_case} with steak holding: ')
-    print(steak)
-    print('=' * 30)
-    f_result = finder.find(steak)
-    pprint(f_result.d)
+    for u in finder.users.keys():
+        test_case = finder.users[u]
+        all_money = sum(b for _, b, _ in test_case)
+        steak = {cname: balance / all_money for cname, balance, _ in test_case}
+
+        print(f'Query : find user {test_case} with steak holding: ')
+        print(steak)
+        print('=' * 30)
+        method = 'paper'
+
+        n_acc = len(test_case)
+        tot_cnt[n_acc] += 1
+
+        if method == 'paper':
+            f_result = finder.find_paper(steak)
+        else:
+            f_result = finder.find(steak)
+
+        if f_result:
+            uids_user = set(uid for _, _, uid in test_case)
+            uids_ans = set(v.identifier for v in f_result.d.values())
+
+            if any(v in uids_user for v in uids_ans):
+                hit_cnt[n_acc] += 1
 
     print('Done!')

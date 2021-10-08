@@ -136,6 +136,5 @@ class CointSimulator:
             if new_trx is not None:
                 new_transactions.append(new_trx)
 
-
         new_db_objects = new_accounts + new_transactions + [miner_trx]
         return new_db_objects

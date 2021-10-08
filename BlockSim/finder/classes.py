@@ -111,3 +111,50 @@ class FinderAnswer:
         averages = [custom_mean([acc.get_score() for acc in arr]) for arr in self.d.values()]
         variances = [custom_var([acc.get_score() for acc in arr]) for arr in self.d.values()]
         return averages, variances
+
+
+class FinderAnswerPaper:
+    def __init__(self, dictionary, alpha):
+        self.d = dictionary
+        self.alpha = alpha
+
+    def __eq__(self, other):
+        if isinstance(other, FinderAnswer):
+            return self.get_score() == other.get_score()
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.get_score() == other
+
+    def __lt__(self, other):
+        if isinstance(other, FinderAnswer):
+            return self.get_score() < other.get_score()
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.get_score() < other
+
+    def __le__(self, other):
+        if isinstance(other, FinderAnswer):
+            return self.get_score() <= other.get_score()
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.get_score() <= other
+
+    def __ge__(self, other):
+        if isinstance(other, FinderAnswer):
+            return self.get_score() >= other.get_score()
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.get_score() >= other
+
+    def __gt__(self, other):
+        if isinstance(other, FinderAnswer):
+            return self.get_score() > other.get_score()
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.get_score() > other
+
+    def __str__(self):
+        return f"Answer {self.d.keys()} score: {self.get_score()}"
+
+    def __repr__(self):
+        return self.__str__()
+
+    def get_score(self):
+        m = len(self.alpha.keys())
+        bsum = sum(a.balance for a in self.d.values())
+        return m - sum(abs(self.alpha[key] - self.d[key].balance / bsum) for key in self.d.keys())
