@@ -307,4 +307,10 @@ if __name__ == '__main__':
             if any(v in uids_user for v in uids_ans):
                 hit_cnt[n_acc] += 1
 
+    with open('../result.txt', 'w') as f:
+        f.write('--- total counter ---')
+        f.write(pprint.pformat(tot_cnt, indent=4))
+        f.write('--- hit counter ---')
+        f.write(pprint.pformat(hit_cnt, indent=4))
+
     print('Done!')
