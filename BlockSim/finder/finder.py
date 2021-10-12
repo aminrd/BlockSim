@@ -5,6 +5,7 @@ from tqdm import tqdm
 import warnings
 import itertools
 import copy
+import pickle
 
 
 def binary_find(balance, all_balances):
@@ -265,12 +266,12 @@ class Finder:
 
 if __name__ == '__main__':
     print('Testing BlockSim.finder module')
-    from pprint import pprint
+    import pprint
     import random
 
     finder = Finder(20)
-    pprint(finder.balances)
-    pprint(finder.users)
+    pprint.pprint(finder.balances)
+    pprint.pprint(finder.users)
 
     balances = [random.randrange(0, 10000) for _ in range(1000)]
     balances = [FinderAccount(b, i) for i, b in enumerate(balances)]
@@ -278,18 +279,14 @@ if __name__ == '__main__':
 
     target_acc = FinderAccount(100, -1)
     result = binary_find(target_acc, balances)
-    pprint(result)
 
-    tot_cnt, hit_cnt = defaultdict(int), defaultdict(int)
+    tot_cnt, miss_cnt = defaultdict(int), defaultdict(int)
+    scores = defaultdict(list)
 
     for u in finder.users.keys():
         test_case = finder.users[u]
         all_money = sum(b for _, b, _ in test_case)
         steak = {cname: balance / all_money for cname, balance, _ in test_case}
-
-        print(f'Query : find user {test_case} with steak holding: ')
-        print(steak)
-        print('=' * 30)
         method = 'paper'
 
         n_acc = len(test_case)
@@ -304,13 +301,18 @@ if __name__ == '__main__':
             uids_user = set(uid for _, _, uid in test_case)
             uids_ans = set(v.identifier for v in f_result.d.values())
 
-            if any(v in uids_user for v in uids_ans):
-                hit_cnt[n_acc] += 1
+            avg_score = f_result.get_score() / n_acc
+            scores[n_acc].append(avg_score)
 
-    with open('../result.txt', 'w') as f:
-        f.write('--- total counter ---')
-        f.write(pprint.pformat(tot_cnt, indent=4))
-        f.write('--- hit counter ---')
-        f.write(pprint.pformat(hit_cnt, indent=4))
+        else:
+            miss_cnt[n_acc] += 1
+
+    with open('../result.pickle', 'wb') as handle:
+        output_dict = {
+            'tot_cnt': tot_cnt,
+            'miss_cnt': miss_cnt,
+            'scores': scores
+        }
+        pickle.dump(output_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     print('Done!')

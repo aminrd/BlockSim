@@ -5,11 +5,12 @@ __pycache__/
 
 # C extensions
 *.so
-result.txt
+BlockSim/result.pickle
+plots.py
 
 # Distribution / packaging
 .Python
-build/
+build/e
 develop-eggs/
 dist/
 downloads/
